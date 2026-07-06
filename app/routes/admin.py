@@ -136,3 +136,33 @@ async def lister_clics(
         select(Clic).offset(offset).limit(limite)
     )
     return result.scalars().all()
+
+    # ============================================================
+# STATS ÉVOLUTION : Clics par jour sur les 30 derniers jours
+# URL : GET /admin/stats/evolution
+# ============================================================
+@router.get("/stats/evolution")
+async def stats_evolution(db: AsyncSession = Depends(get_db)):
+    
+    # On récupère tous les clics des 30 derniers jours
+    date_debut = datetime.utcnow() - timedelta(days=30)
+    
+    result = await db.execute(
+        select(Clic).where(Clic.timestamp >= date_debut)
+    )
+    clics = result.scalars().all()
+
+    # On groupe les clics par jour
+    # Un dictionnaire où la clé = date, valeur = nombre de clics
+    evolution = {}
+    for clic in clics:
+        jour = clic.timestamp.strftime("%d/%m")
+        if jour not in evolution:
+            evolution[jour] = 0
+        evolution[jour] += 1
+
+    # On retourne une liste triée par date
+    return [
+        {"date": jour, "clics": count}
+        for jour, count in sorted(evolution.items())
+    ]

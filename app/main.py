@@ -3,26 +3,17 @@
 # ============================================================
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.database import engine, Base
+from app.routes import tracking, admin, auth
 
-# On importe les routes qu'on va créer juste après
-from app.routes import tracking, admin
-
-# ============================================================
-# Fonction qui s'exécute au démarrage de l'application
-# Elle crée automatiquement toutes les tables en base de données
-# si elles n'existent pas encore
-# ============================================================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
 
-# ============================================================
-# Création de l'application FastAPI
-# ============================================================
 app = FastAPI(
     title="HB Digital Tracking",
     description="Plateforme de tracking de liens d'affiliation",
@@ -30,16 +21,20 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# ============================================================
-# On connecte les routes à l'application
-# Chaque "router" regroupe un ensemble d'endpoints
-# ============================================================
+# CORS — Autorise le dashboard React à appeler l'API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# On connecte les 3 routers
 app.include_router(tracking.router, prefix="/c", tags=["Tracking"])
 app.include_router(admin.router, prefix="/admin", tags=["Admin"])
+app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 
-# ============================================================
-# Route de base pour vérifier que l'API fonctionne
-# ============================================================
 @app.get("/")
 async def root():
     return {"message": "HB Digital Tracking API — opérationnelle ✅"}

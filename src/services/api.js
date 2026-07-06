@@ -51,4 +51,10 @@ export const getClics = async (page = 1) => {
   return response.data;
 };
 
+// Récupérer l'évolution des clics sur 30 jours
+export const getEvolution = async () => {
+  const response = await api.get('/admin/stats/evolution');
+  return response.data;
+};
+
 export default api;

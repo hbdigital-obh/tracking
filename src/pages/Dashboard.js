@@ -2,33 +2,28 @@
 // Dashboard.js — Page principale avec les stats
 // ============================================================
 import React, { useState, useEffect } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import StatCard from '../components/StatCard';
-import { getStatsGlobal, getClics } from '../services/api';
-
-// useState → permet de stocker des données dans le composant
-// useEffect → permet d'exécuter du code au chargement de la page
-// C'est comme un constructeur en Java
+import { getStatsGlobal, getClics, getEvolution } from '../services/api';
 
 function Dashboard() {
 
-  // On déclare les variables d'état
-  // stats → les KPIs globaux (clics, leads, revenu...)
-  // clics → la liste des derniers clics
-  // loading → true pendant le chargement, false quand c'est prêt
   const [stats, setStats] = useState(null);
   const [clics, setClics] = useState([]);
+  const [evolution, setEvolution] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // useEffect s'exécute automatiquement quand la page se charge
-  // C'est ici qu'on appelle notre API FastAPI
   useEffect(() => {
     const chargerDonnees = async () => {
       try {
-        // On appelle l'API pour récupérer les stats et les clics
-        const statsData = await getStatsGlobal();
-        const clicsData = await getClics();
+        const [statsData, clicsData, evolutionData] = await Promise.all([
+          getStatsGlobal(),
+          getClics(),
+          getEvolution()
+        ]);
         setStats(statsData);
         setClics(clicsData);
+        setEvolution(evolutionData);
       } catch (error) {
         console.error("Erreur lors du chargement des données", error);
       } finally {
@@ -36,9 +31,8 @@ function Dashboard() {
       }
     };
     chargerDonnees();
-  }, []); // [] = s'exécute une seule fois au chargement
+  }, []);
 
-  // Si les données sont en cours de chargement, on affiche un message
   if (loading) {
     return <div className="p-8 text-gray-500">Chargement...</div>;
   }
@@ -46,7 +40,7 @@ function Dashboard() {
   return (
     <div className="p-8">
 
-      {/* Titre de la page */}
+      {/* Titre */}
       <h1 className="text-2xl font-bold text-gray-800 mb-6">
         Dashboard — Vue globale
       </h1>
@@ -73,6 +67,28 @@ function Dashboard() {
           valeur={`${stats?.revenu_total ?? 0}€`}
           couleur="border-yellow-500"
         />
+      </div>
+
+      {/* Graphique évolution */}
+      <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <h2 className="text-lg font-bold text-gray-800 mb-4">
+          Évolution des clics — 30 derniers jours
+        </h2>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={evolution}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" />
+            <YAxis />
+            <Tooltip />
+            <Line
+              type="monotone"
+              dataKey="clics"
+              stroke="#3B82F6"
+              strokeWidth={2}
+              dot={{ fill: '#3B82F6' }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Tableau des derniers clics */}

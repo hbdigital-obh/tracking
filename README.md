@@ -1,70 +1,125 @@
-# Getting Started with Create React App
+# HB Digital — Plateforme de Tracking
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Plateforme de tracking de liens d'affiliation développée pour remplacer Affilae.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## 📋 Description du projet
 
-### `npm start`
+HB Digital Performance est une agence de marketing digital spécialisée dans l'affiliation. Cette plateforme permet de :
+- Tracker les clics sur les liens d'affiliation
+- Enregistrer les conversions (leads)
+- Visualiser les stats dans un dashboard
+- Gérer les éditeurs et campagnes
+- Automatiser la récupération des revenus externes
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+---
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 🏗️ Architecture
+[React Dashboard] → [FastAPI Backend] → [PostgreSQL]
 
-### `npm test`
+↓
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+[Scripts automatisation]
 
-### `npm run build`
+TradeDoubler / R-Advertising → Airtable
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 🛠️ Stack technique
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+| Technologie | Usage |
+|---|---|
+| Python 3.14 + FastAPI | Backend API REST |
+| SQLAlchemy + Alembic | ORM + migrations BDD |
+| PostgreSQL (prod) / SQLite (dev) | Base de données |
+| React + Tailwind CSS | Frontend dashboard |
+| JWT (python-jose) | Authentification |
+| Docker + Nginx | Déploiement VPS |
+| Reportlab | Génération PDF |
+| Schedule | Automatisation des scripts |
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+---
 
-### `npm run eject`
+## 🚀 Installation en local
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### 1. Cloner le repo
+```bash
+git clone https://github.com/hbdigital-obh/tracking.git
+cd tracking
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### 2. Backend FastAPI
+```bash
+cd hb-tracking
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### 3. Frontend React
+```bash
+cd dashboard-hb
+npm install
+npm start
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### 4. Variables d'environnement
+Crée un fichier `.env` dans `hb-tracking` :
+DATABASE_URL=sqlite+aiosqlite:///./hbtracking.db
 
-## Learn More
+SECRET_KEY=hbdigital-secret-key-2026
+---
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## 📡 Endpoints API
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### Tracking (public)
+| Méthode | Route | Description |
+|---|---|---|
+| GET | /c/{slug_editeur}/{slug_campagne} | Tracker un clic et rediriger |
+| GET | /c/pixel.gif?token=XXX | Pixel de tracking |
+| GET | /c/postback?token=XXX&valeur=XX | Signal de conversion |
 
-### Code Splitting
+### Admin (protégé JWT)
+| Méthode | Route | Description |
+|---|---|---|
+| POST | /auth/register | Créer un compte admin |
+| POST | /auth/login | Se connecter |
+| GET | /admin/stats/global | KPIs globaux |
+| GET | /admin/stats/evolution | Évolution des clics |
+| GET/POST | /admin/editeurs | Gestion des éditeurs |
+| GET/POST | /admin/campagnes | Gestion des campagnes |
+| GET | /admin/clics | Liste des clics |
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+---
 
-### Analyzing the Bundle Size
+## 🤖 Scripts automatisation
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+| Script | Fréquence | Description |
+|---|---|---|
+| tradedoubler.py | Chaque jour à 7h | Récupère revenus TradeDoubler → Airtable |
+| r_advertising.py | Chaque jour à 7h | Récupère revenus R-Advertising → Airtable |
+| rapport_pdf.py | Chaque lundi à 8h | Génère rapport PDF hebdomadaire |
+| scheduler.py | Permanent | Lance automatiquement les scripts |
 
-### Making a Progressive Web App
+Pour lancer le scheduler :
+```bash
+cd scripts
+python scheduler.py
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+---
 
-### Advanced Configuration
+## 🗄️ Modèle de données
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+- **editeurs** → les partenaires qui diffusent les liens
+- **campagnes** → les offres à promouvoir
+- **clics** → chaque clic sur un lien de tracking
+- **leads** → les conversions générées
+- **utilisateurs** → les comptes admin
 
-### Deployment
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## 👨‍💻 Développé par
 
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Stagiaire L3 MIAGE — Stage HB Digital Performance 2026

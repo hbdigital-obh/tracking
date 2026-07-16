@@ -1,7 +1,3 @@
-# ============================================================
-# main.py — Point d'entrée de l'application FastAPI
-# ============================================================
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -21,16 +17,14 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS — Autorise le dashboard React à appeler l'API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
-# On connecte les 3 routers
 app.include_router(tracking.router, prefix="/c", tags=["Tracking"])
 app.include_router(admin.router, prefix="/admin", tags=["Admin"])
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])

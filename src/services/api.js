@@ -5,7 +5,7 @@
 import axios from 'axios';
 
 // L'URL de base de notre API FastAPI qui tourne en local
-const API_BASE_URL = 'http://127.0.0.1:8000';
+const API_BASE_URL = 'http://62.238.12.184:8000';
 
 // On crée une instance axios configurée avec l'URL de base
 const api = axios.create({

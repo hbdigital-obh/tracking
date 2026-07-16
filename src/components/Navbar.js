@@ -2,13 +2,18 @@
 // Navbar.js — Barre de navigation latérale
 // ============================================================
 import React from 'react';
-
-// On importe Link de react-router-dom
-// Link c'est comme une balise <a> en HTML mais pour React
-// Il permet de naviguer entre les pages sans recharger la page
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 function Navbar() {
+  const navigate = useNavigate();
+
+  // Fonction de déconnexion
+  // On supprime le token du localStorage et on redirige vers /login
+  const deconnexion = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
+
   return (
     <div className="w-64 bg-gray-900 min-h-screen text-white flex flex-col">
       
@@ -21,8 +26,6 @@ function Navbar() {
       {/* Menu de navigation */}
       <nav className="flex-1 p-4">
         <ul className="space-y-2">
-
-          {/* Chaque Link pointe vers une page différente */}
           <li>
             <Link to="/" className="flex items-center p-3 rounded-lg hover:bg-gray-700 transition">
               📊 Dashboard
@@ -43,9 +46,18 @@ function Navbar() {
               🖱️ Clics
             </Link>
           </li>
-
         </ul>
       </nav>
+
+      {/* Bouton déconnexion en bas */}
+      <div className="p-4 border-t border-gray-700">
+        <button
+          onClick={deconnexion}
+          className="w-full flex items-center p-3 rounded-lg hover:bg-red-700 transition text-red-400 hover:text-white"
+        >
+          🚪 Déconnexion
+        </button>
+      </div>
 
     </div>
   );

@@ -57,7 +57,14 @@ function Campagnes() {
             {campagnes.map((campagne) => (
               <tr key={campagne.id} className="border-t hover:bg-gray-50">
                 <td className="p-3 text-gray-400">{campagne.id}</td>
-                <td className="p-3 font-medium">{campagne.nom}</td>
+                <td className="p-3 font-medium">
+                  <button
+                    onClick={() => navigate(`/campagnes/${campagne.id}`)}
+                    className="text-blue-600 hover:underline"
+                  >
+                    {campagne.nom}
+                  </button>
+                </td>
                 <td className="p-3 text-blue-600">{campagne.slug}</td>
                 <td className="p-3">
                   <a href={campagne.url_destination} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline text-xs">

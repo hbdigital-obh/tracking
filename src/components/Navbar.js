@@ -97,7 +97,12 @@ function Navbar() {
               📈 Reporting
             </Link>
           </li>
-
+          {/* Pixels — AJOUTE ICI */}
+          <li>
+            <Link to="/pixels" className="flex items-center p-3 rounded-lg hover:bg-gray-700 transition">
+               🎯 Pixels & Postbacks
+            </Link>
+          </li>
         </ul>
       </nav>
 

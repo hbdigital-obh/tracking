@@ -12,6 +12,7 @@ import Login from './pages/Login';
 import Reporting from './pages/Reporting';
 import CreerEditeur from './pages/CreerEditeur';
 import CreerCampagne from './pages/CreerCampagne';
+import Pixels from './pages/Pixels';
 
 const isAuthenticated = () => {
   return localStorage.getItem('token') !== null;
@@ -39,6 +40,7 @@ function App() {
                   <Route path="/campagnes/creer" element={<CreerCampagne />} />
                   <Route path="/clics" element={<Clics />} />
                   <Route path="/reporting" element={<Reporting />} />
+                  <Route path="/pixels" element={<Pixels />} />
                 </Routes>
               </div>
             </div>

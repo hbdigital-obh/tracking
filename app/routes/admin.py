@@ -262,3 +262,69 @@ async def stats_editeur_detail(editeur_id: int, db: AsyncSession = Depends(get_d
             for jour, count in sorted(evolution.items())
         ]
     }
+# ============================================================
+# DÉTAIL D'UNE CAMPAGNE
+# URL : GET /admin/campagnes/{campagne_id}/stats
+# ============================================================
+@router.get("/campagnes/{campagne_id}/stats")
+async def stats_campagne_detail(campagne_id: int, db: AsyncSession = Depends(get_db)):
+    
+    result = await db.execute(select(Campagne).where(Campagne.id == campagne_id))
+    campagne = result.scalar_one_or_none()
+    if not campagne:
+        raise HTTPException(status_code=404, detail="Campagne introuvable")
+
+    # Stats globales
+    total_clics = (await db.execute(select(func.count(Clic.id)).where(Clic.campagne_id == campagne_id))).scalar()
+    total_leads = (await db.execute(select(func.count(Lead.id)).join(Clic, Lead.clic_id == Clic.id).where(Clic.campagne_id == campagne_id))).scalar()
+    taux_conversion = round((total_leads / total_clics) * 100, 2) if total_clics > 0 else 0.0
+
+    # Evolution sur 30 jours
+    date_debut = datetime.utcnow() - timedelta(days=30)
+    result_clics = await db.execute(
+        select(Clic).where(Clic.campagne_id == campagne_id, Clic.timestamp >= date_debut)
+    )
+    clics = result_clics.scalars().all()
+    
+    evolution = {}
+    for clic in clics:
+        jour = clic.timestamp.strftime("%d/%m")
+        if jour not in evolution:
+            evolution[jour] = 0
+        evolution[jour] += 1
+
+    # Stats par éditeur sur cette campagne
+    result_editeurs = await db.execute(select(Editeur))
+    editeurs = result_editeurs.scalars().all()
+    
+    stats_editeurs = []
+    for editeur in editeurs:
+        clics_editeur = (await db.execute(
+            select(func.count(Clic.id)).where(Clic.campagne_id == campagne_id, Clic.editeur_id == editeur.id)
+        )).scalar()
+        if clics_editeur > 0:
+            stats_editeurs.append({
+                "editeur_id": editeur.id,
+                "editeur_nom": editeur.nom,
+                "total_clics": clics_editeur
+            })
+
+    return {
+        "campagne": {
+            "id": campagne.id,
+            "nom": campagne.nom,
+            "slug": campagne.slug,
+            "url_destination": campagne.url_destination,
+            "statut": campagne.statut
+        },
+        "stats": {
+            "total_clics": total_clics,
+            "total_leads": total_leads,
+            "taux_conversion": taux_conversion
+        },
+        "evolution": [
+            {"date": jour, "clics": count}
+            for jour, count in sorted(evolution.items())
+        ],
+        "stats_editeurs": stats_editeurs
+    }

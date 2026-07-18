@@ -166,3 +166,139 @@ async def stats_evolution(db: AsyncSession = Depends(get_db)):
         {"date": jour, "clics": count}
         for jour, count in sorted(evolution.items())
     ]
+# ============================================================
+# STATS PAR ÉDITEUR
+# URL : GET /admin/stats/editeurs
+# ============================================================
+@router.get("/stats/editeurs")
+async def stats_editeurs(
+    date_debut: str = None,
+    date_fin: str = None,
+    db: AsyncSession = Depends(get_db)
+):
+    # On récupère tous les éditeurs
+    result = await db.execute(select(Editeur))
+    editeurs = result.scalars().all()
+
+    stats = []
+    for editeur in editeurs:
+        # Nombre de clics par éditeur
+        query_clics = select(func.count(Clic.id)).where(
+            Clic.editeur_id == editeur.id
+        )
+        # Nombre de leads par éditeur
+        query_leads = select(func.count(Lead.id)).join(
+            Clic, Lead.clic_id == Clic.id
+        ).where(Clic.editeur_id == editeur.id)
+
+        total_clics = (await db.execute(query_clics)).scalar()
+        total_leads = (await db.execute(query_leads)).scalar()
+
+        taux_conversion = 0.0
+        if total_clics > 0:
+            taux_conversion = round((total_leads / total_clics) * 100, 2)
+
+        stats.append({
+            "editeur_id": editeur.id,
+            "editeur_nom": editeur.nom,
+            "editeur_slug": editeur.slug,
+            "total_clics": total_clics,
+            "total_leads": total_leads,
+            "taux_conversion": taux_conversion,
+        })
+
+    return stats
+
+
+# ============================================================
+# STATS PAR CAMPAGNE
+# URL : GET /admin/stats/campagnes
+# ============================================================
+@router.get("/stats/campagnes")
+async def stats_campagnes(
+    date_debut: str = None,
+    date_fin: str = None,
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(Campagne))
+    campagnes = result.scalars().all()
+
+    stats = []
+    for campagne in campagnes:
+        query_clics = select(func.count(Clic.id)).where(
+            Clic.campagne_id == campagne.id
+        )
+        query_leads = select(func.count(Lead.id)).join(
+            Clic, Lead.clic_id == Clic.id
+        ).where(Clic.campagne_id == campagne.id)
+
+        total_clics = (await db.execute(query_clics)).scalar()
+        total_leads = (await db.execute(query_leads)).scalar()
+
+        taux_conversion = 0.0
+        if total_clics > 0:
+            taux_conversion = round((total_leads / total_clics) * 100, 2)
+
+        stats.append({
+            "campagne_id": campagne.id,
+            "campagne_nom": campagne.nom,
+            "campagne_slug": campagne.slug,
+            "url_destination": campagne.url_destination,
+            "total_clics": total_clics,
+            "total_leads": total_leads,
+            "taux_conversion": taux_conversion,
+        })
+
+    return stats
+
+
+# ============================================================
+# EXPORT CSV
+# URL : GET /admin/export/csv
+# ============================================================
+@router.get("/export/csv")
+async def export_csv(
+    periode: int = 30,
+    editeur_id: int = None,
+    db: AsyncSession = Depends(get_db)
+):
+    from fastapi.responses import StreamingResponse
+    import csv
+    import io
+    from datetime import timedelta
+
+    date_debut = datetime.utcnow() - timedelta(days=periode)
+
+    query = select(Clic).where(Clic.timestamp >= date_debut)
+    if editeur_id:
+        query = query.where(Clic.editeur_id == editeur_id)
+
+    result = await db.execute(query)
+    clics = result.scalars().all()
+
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=';')
+    writer.writerow(['date', 'editeur_id', 'campagne_id', 'device', 'token', 'lead'])
+
+    for clic in clics:
+        lead_result = await db.execute(
+            select(Lead).where(Lead.clic_id == clic.id)
+        )
+        lead = lead_result.scalar_one_or_none()
+        writer.writerow([
+            clic.timestamp.strftime('%d/%m/%Y %H:%M:%S'),
+            clic.editeur_id,
+            clic.campagne_id,
+            clic.device,
+            clic.token,
+            'oui' if lead else 'non'
+        ])
+
+    output.seek(0)
+    filename = f"tracking_hbdigital_{datetime.utcnow().strftime('%Y-%m')}.csv"
+
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )

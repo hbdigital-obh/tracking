@@ -59,6 +59,7 @@ class ClicRead(BaseModel):
     ip_anonyme: str
     device: str
     token: str
+    is_suspect: bool = False  # ← AJOUTE CETTE LIGNE
 
     model_config = {"from_attributes": True}
 

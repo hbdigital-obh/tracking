@@ -56,6 +56,7 @@ class Clic(Base):
     ip_anonyme = Column(String)                            # IP anonymisée (RGPD)
     device = Column(String)                                # mobile / desktop / tablet
     token = Column(String, unique=True, index=True)        # Token unique pour identifier ce clic
+    is_suspect = Column(Boolean, default=False)  # True si clic suspect (bot, doublon...)
 
     # Relations vers les autres tables
     editeur = relationship("Editeur", back_populates="clics")

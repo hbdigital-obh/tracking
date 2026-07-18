@@ -212,3 +212,53 @@ async def generer_snippet_pixel(campagne_id: int, db: AsyncSession = Depends(get
         "postback_url": postback_url,
         "pixel_url": pixel_url
     }
+# ============================================================
+# DÉTAIL D'UN ÉDITEUR
+# URL : GET /admin/editeurs/{editeur_id}/stats
+# ============================================================
+@router.get("/editeurs/{editeur_id}/stats")
+async def stats_editeur_detail(editeur_id: int, db: AsyncSession = Depends(get_db)):
+    
+    # On récupère l'éditeur
+    result = await db.execute(select(Editeur).where(Editeur.id == editeur_id))
+    editeur = result.scalar_one_or_none()
+    if not editeur:
+        raise HTTPException(status_code=404, detail="Éditeur introuvable")
+
+    # Stats globales
+    total_clics = (await db.execute(select(func.count(Clic.id)).where(Clic.editeur_id == editeur_id))).scalar()
+    total_leads = (await db.execute(select(func.count(Lead.id)).join(Clic, Lead.clic_id == Clic.id).where(Clic.editeur_id == editeur_id))).scalar()
+    taux_conversion = round((total_leads / total_clics) * 100, 2) if total_clics > 0 else 0.0
+
+    # Evolution sur 30 jours
+    date_debut = datetime.utcnow() - timedelta(days=30)
+    result_clics = await db.execute(
+        select(Clic).where(Clic.editeur_id == editeur_id, Clic.timestamp >= date_debut)
+    )
+    clics = result_clics.scalars().all()
+    
+    evolution = {}
+    for clic in clics:
+        jour = clic.timestamp.strftime("%d/%m")
+        if jour not in evolution:
+            evolution[jour] = 0
+        evolution[jour] += 1
+
+    return {
+        "editeur": {
+            "id": editeur.id,
+            "nom": editeur.nom,
+            "slug": editeur.slug,
+            "email": editeur.email,
+            "statut": editeur.statut
+        },
+        "stats": {
+            "total_clics": total_clics,
+            "total_leads": total_leads,
+            "taux_conversion": taux_conversion
+        },
+        "evolution": [
+            {"date": jour, "clics": count}
+            for jour, count in sorted(evolution.items())
+        ]
+    }

@@ -1,20 +1,15 @@
 // ============================================================
-// Editeurs.js — Page de gestion des éditeurs + générateur de liens
+// Editeurs.js — Liste des éditeurs uniquement
 // ============================================================
 import React, { useState, useEffect } from 'react';
-import { getEditeurs, creerEditeur, getCampagnes } from '../services/api';
+import { useNavigate } from 'react-router-dom';
+import { getEditeurs, getCampagnes } from '../services/api';
 
 function Editeurs() {
-
+  const navigate = useNavigate();
   const [editeurs, setEditeurs] = useState([]);
   const [campagnes, setCampagnes] = useState([]);
-  const [formulaire, setFormulaire] = useState({
-    nom: '',
-    email: '',
-    slug: ''
-  });
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState('');
   const [editeurSelectionne, setEditeurSelectionne] = useState('');
   const [campagneSelectionnee, setCampagneSelectionnee] = useState('');
   const [lienGenere, setLienGenere] = useState('');
@@ -38,28 +33,12 @@ function Editeurs() {
     }
   };
 
-  const handleChange = (e) => {
-    setFormulaire({ ...formulaire, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await creerEditeur(formulaire);
-      setMessage("Éditeur créé avec succès !");
-      chargerDonnees();
-      setFormulaire({ nom: '', email: '', slug: '' });
-    } catch (error) {
-      setMessage("Erreur lors de la création de l'éditeur");
-    }
-  };
-
   const genererLien = () => {
     if (!editeurSelectionne || !campagneSelectionnee) {
       setLienGenere('');
       return;
     }
-    const lien = `http://127.0.0.1:8000/c/${editeurSelectionne}/${campagneSelectionnee}`;
+    const lien = `http://62.238.12.184:8000/c/${editeurSelectionne}/${campagneSelectionnee}`;
     setLienGenere(lien);
   };
 
@@ -72,7 +51,16 @@ function Editeurs() {
 
   return (
     <div className="p-8">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Gestion des éditeurs</h1>
+
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Liste des éditeurs</h1>
+        <button
+          onClick={() => navigate('/editeurs/creer')}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          ➕ Nouvel éditeur
+        </button>
+      </div>
 
       {/* Générateur de liens */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
@@ -104,24 +92,12 @@ function Editeurs() {
         )}
       </div>
 
-      {/* Formulaire */}
-      <div className="bg-white rounded-lg shadow p-6 mb-8">
-        <h2 className="text-lg font-bold mb-4">Créer un éditeur</h2>
-        {message && <p className="text-green-600 mb-4">{message}</p>}
-        <form onSubmit={handleSubmit} className="grid grid-cols-3 gap-4">
-          <input type="text" name="nom" placeholder="Nom" value={formulaire.nom} onChange={handleChange} className="border rounded p-2" required />
-          <input type="email" name="email" placeholder="Email" value={formulaire.email} onChange={handleChange} className="border rounded p-2" required />
-          <input type="text" name="slug" placeholder="Slug (ex: jean-dupont)" value={formulaire.slug} onChange={handleChange} className="border rounded p-2" required />
-          <button type="submit" className="col-span-3 bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Créer l'éditeur</button>
-        </form>
-      </div>
-
-      {/* Tableau */}
+      {/* Tableau des éditeurs */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-bold mb-4">Liste des éditeurs ({editeurs.length})</h2>
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 text-gray-600">
+              <th className="p-3 text-left">ID</th>
               <th className="p-3 text-left">Nom</th>
               <th className="p-3 text-left">Email</th>
               <th className="p-3 text-left">Slug</th>
@@ -132,16 +108,20 @@ function Editeurs() {
           <tbody>
             {editeurs.map((editeur) => (
               <tr key={editeur.id} className="border-t hover:bg-gray-50">
+                <td className="p-3 text-gray-400">{editeur.id}</td>
                 <td className="p-3 font-medium">{editeur.nom}</td>
                 <td className="p-3">{editeur.email}</td>
                 <td className="p-3 text-blue-600">{editeur.slug}</td>
-                <td className="p-3"><span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">{editeur.statut}</span></td>
+                <td className="p-3">
+                  <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">{editeur.statut}</span>
+                </td>
                 <td className="p-3">{new Date(editeur.date_creation).toLocaleDateString('fr-FR')}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
     </div>
   );
 }

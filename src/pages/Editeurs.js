@@ -109,7 +109,14 @@ function Editeurs() {
             {editeurs.map((editeur) => (
               <tr key={editeur.id} className="border-t hover:bg-gray-50">
                 <td className="p-3 text-gray-400">{editeur.id}</td>
-                <td className="p-3 font-medium">{editeur.nom}</td>
+                <td className="p-3 font-medium">
+                  <button
+                    onClick={() => navigate(`/editeurs/${editeur.id}`)}
+                    className="text-blue-600 hover:underline"
+                  >
+                    {editeur.nom}
+                  </button>
+                </td>
                 <td className="p-3">{editeur.email}</td>
                 <td className="p-3 text-blue-600">{editeur.slug}</td>
                 <td className="p-3">

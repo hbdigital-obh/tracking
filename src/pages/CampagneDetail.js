@@ -1,5 +1,5 @@
 // ============================================================
-// CampagneDetail.js — Page détail d'une campagne
+// CampagneDetail.js — Page détail d'une campagne avec modification
 // ============================================================
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -11,19 +11,56 @@ function CampagneDetail() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [modeEdition, setModeEdition] = useState(false);
+  const [formulaire, setFormulaire] = useState({});
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     chargerDetail();
   }, [id]);
 
   const chargerDetail = async () => {
+    setLoading(true);
     try {
       const response = await api.get(`/admin/campagnes/${id}/stats`);
       setData(response.data);
+      setFormulaire({
+        nom: response.data.campagne.nom,
+        slug: response.data.campagne.slug,
+        url_destination: response.data.campagne.url_destination,
+        statut: response.data.campagne.statut
+      });
     } catch (error) {
       console.error("Erreur chargement détail campagne", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const sauvegarder = async () => {
+    try {
+      await api.put(`/admin/campagnes/${id}`, formulaire);
+      setMessage("Campagne modifiée avec succès !");
+      setModeEdition(false);
+      await chargerDetail();
+    } catch (error) {
+      setMessage("Erreur lors de la modification");
+    }
+  };
+
+  const changerStatut = async (nouveauStatut) => {
+    const messages = {
+      "pause": "Mettre en pause cette campagne ?",
+      "active": "Réactiver cette campagne ?",
+      "terminee": "Terminer cette campagne ?"
+    };
+    if (!window.confirm(messages[nouveauStatut])) return;
+    try {
+      await api.put(`/admin/campagnes/${id}/statut?statut=${nouveauStatut}`);
+      setMessage(`Campagne ${nouveauStatut === 'active' ? 'réactivée' : nouveauStatut === 'pause' ? 'mise en pause' : 'terminée'} !`);
+      await chargerDetail();
+    } catch (error) {
+      setMessage("Erreur lors du changement de statut");
     }
   };
 
@@ -39,31 +76,89 @@ function CampagneDetail() {
     <div className="p-8">
 
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate('/campagnes')} className="text-gray-500 hover:text-gray-700">
-          ← Retour
-        </button>
-        <h1 className="text-2xl font-bold text-gray-800">{data.campagne.nom}</h1>
-        <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">
-          {data.campagne.statut}
-        </span>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate('/campagnes')} className="text-gray-500 hover:text-gray-700">
+            ← Retour
+          </button>
+          <h1 className="text-2xl font-bold text-gray-800">{data.campagne.nom}</h1>
+          <span className={`px-2 py-1 rounded-full text-xs ${
+            data.campagne.statut === 'active' ? 'bg-green-100 text-green-700' :
+            data.campagne.statut === 'pause' ? 'bg-yellow-100 text-yellow-700' :
+            'bg-red-100 text-red-700'
+          }`}>
+            {data.campagne.statut}
+          </span>
+        </div>
+        <div className="flex gap-2">
+          {!modeEdition ? (
+            <>
+              <button onClick={() => setModeEdition(true)} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">
+                ✏️ Modifier
+              </button>
+              {data.campagne.statut === 'active' && (
+                <button onClick={() => changerStatut('pause')} className="bg-yellow-100 text-yellow-700 px-4 py-2 rounded hover:bg-yellow-200 text-sm">
+                  ⏸️ Pause
+                </button>
+              )}
+              {data.campagne.statut === 'pause' && (
+                <button onClick={() => changerStatut('active')} className="bg-green-100 text-green-700 px-4 py-2 rounded hover:bg-green-200 text-sm">
+                  ▶️ Réactiver
+                </button>
+              )}
+              {data.campagne.statut !== 'terminee' && (
+                <button onClick={() => changerStatut('terminee')} className="bg-red-100 text-red-700 px-4 py-2 rounded hover:bg-red-200 text-sm">
+                  🛑 Terminer
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <button onClick={sauvegarder} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm">
+                ✅ Sauvegarder
+              </button>
+              <button onClick={() => setModeEdition(false)} className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 text-sm">
+                Annuler
+              </button>
+            </>
+          )}
+        </div>
       </div>
+
+      {message && <div className="bg-blue-100 text-blue-700 p-3 rounded mb-4">{message}</div>}
 
       {/* Infos campagne */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-lg font-bold mb-3">Informations</h2>
-        <div className="grid grid-cols-3 gap-4 text-sm">
-          <div>
-            <p className="text-gray-500">Slug</p>
-            <p className="font-medium text-blue-600">{data.campagne.slug}</p>
+        {modeEdition ? (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-500 mb-1">Nom</label>
+              <input type="text" value={formulaire.nom} onChange={(e) => setFormulaire({...formulaire, nom: e.target.value})} className="w-full border rounded p-2 text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-500 mb-1">Slug</label>
+              <input type="text" value={formulaire.slug} onChange={(e) => setFormulaire({...formulaire, slug: e.target.value})} className="w-full border rounded p-2 text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-500 mb-1">URL destination</label>
+              <input type="url" value={formulaire.url_destination} onChange={(e) => setFormulaire({...formulaire, url_destination: e.target.value})} className="w-full border rounded p-2 text-sm" />
+            </div>
           </div>
-          <div className="col-span-2">
-            <p className="text-gray-500">URL destination</p>
-            <a href={data.campagne.url_destination} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline text-xs">
-              {data.campagne.url_destination}
-            </a>
+        ) : (
+          <div className="grid grid-cols-3 gap-4 text-sm">
+            <div>
+              <p className="text-gray-500">Slug</p>
+              <p className="font-medium text-blue-600">{data.campagne.slug}</p>
+            </div>
+            <div className="col-span-2">
+              <p className="text-gray-500">URL destination</p>
+              <a href={data.campagne.url_destination} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline text-xs">
+                {data.campagne.url_destination}
+              </a>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* KPIs */}

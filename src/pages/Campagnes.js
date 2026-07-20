@@ -25,6 +25,15 @@ function Campagnes() {
     }
   };
 
+  const couleurStatut = (statut) => {
+    switch(statut) {
+      case 'active': return 'bg-green-100 text-green-700';
+      case 'pause': return 'bg-yellow-100 text-yellow-700';
+      case 'terminee': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+
   if (loading) return <div className="p-8">Chargement...</div>;
 
   return (
@@ -72,7 +81,9 @@ function Campagnes() {
                   </a>
                 </td>
                 <td className="p-3">
-                  <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">{campagne.statut}</span>
+                  <span className={`px-2 py-1 rounded-full text-xs ${couleurStatut(campagne.statut)}`}>
+                    {campagne.statut}
+                  </span>
                 </td>
                 <td className="p-3">{new Date(campagne.date_creation).toLocaleDateString('fr-FR')}</td>
               </tr>

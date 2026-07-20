@@ -26,7 +26,8 @@ function EditeurDetail() {
       setFormulaire({
         nom: response.data.editeur.nom,
         email: response.data.editeur.email,
-        slug: response.data.editeur.slug
+        slug: response.data.editeur.slug,
+        statut: response.data.editeur.statut
       });
     } catch (error) {
       console.error("Erreur chargement détail éditeur", error);
@@ -57,6 +58,20 @@ function EditeurDetail() {
     }
   };
 
+  const reactiver = async () => {
+    if (!window.confirm("Réactiver cet éditeur ?")) return;
+    try {
+      await api.put(`/admin/editeurs/${id}`, {
+        ...formulaire,
+        statut: "actif"
+      });
+      setMessage("Éditeur réactivé !");
+      chargerDetail();
+    } catch (error) {
+      setMessage("Erreur lors de la réactivation");
+    }
+  };
+
   if (loading) return <div className="p-8">Chargement...</div>;
   if (!data) return <div className="p-8">Éditeur introuvable</div>;
 
@@ -80,9 +95,15 @@ function EditeurDetail() {
               <button onClick={() => setModeEdition(true)} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">
                 ✏️ Modifier
               </button>
-              <button onClick={desactiver} className="bg-red-100 text-red-700 px-4 py-2 rounded hover:bg-red-200 text-sm">
-                🚫 Désactiver
-              </button>
+              {data.editeur.statut === 'actif' ? (
+                <button onClick={desactiver} className="bg-red-100 text-red-700 px-4 py-2 rounded hover:bg-red-200 text-sm">
+                  🚫 Désactiver
+                </button>
+              ) : (
+                <button onClick={reactiver} className="bg-green-100 text-green-700 px-4 py-2 rounded hover:bg-green-200 text-sm">
+                  ✅ Réactiver
+                </button>
+              )}
             </>
           ) : (
             <>

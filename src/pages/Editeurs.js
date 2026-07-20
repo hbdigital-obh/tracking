@@ -92,7 +92,7 @@ function Editeurs() {
         )}
       </div>
 
-      {/* Tableau des éditeurs */}
+      {/* Tableau */}
       <div className="bg-white rounded-lg shadow p-6">
         <table className="w-full text-sm">
           <thead>

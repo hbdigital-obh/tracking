@@ -20,6 +20,7 @@ function EditeurDetail() {
   }, [id]);
 
   const chargerDetail = async () => {
+    setLoading(true);
     try {
       const response = await api.get(`/admin/editeurs/${id}/stats`);
       setData(response.data);
@@ -41,7 +42,7 @@ function EditeurDetail() {
       await api.put(`/admin/editeurs/${id}`, formulaire);
       setMessage("Éditeur modifié avec succès !");
       setModeEdition(false);
-      chargerDetail();
+      await chargerDetail();
     } catch (error) {
       setMessage("Erreur lors de la modification");
     }
@@ -52,7 +53,7 @@ function EditeurDetail() {
     try {
       await api.delete(`/admin/editeurs/${id}`);
       setMessage("Éditeur désactivé !");
-      chargerDetail();
+      await chargerDetail();
     } catch (error) {
       setMessage("Erreur lors de la désactivation");
     }
@@ -62,11 +63,13 @@ function EditeurDetail() {
     if (!window.confirm("Réactiver cet éditeur ?")) return;
     try {
       await api.put(`/admin/editeurs/${id}`, {
-        ...formulaire,
+        nom: formulaire.nom,
+        email: formulaire.email,
+        slug: formulaire.slug,
         statut: "actif"
       });
       setMessage("Éditeur réactivé !");
-      chargerDetail();
+      await chargerDetail();
     } catch (error) {
       setMessage("Erreur lors de la réactivation");
     }

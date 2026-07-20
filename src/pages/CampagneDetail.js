@@ -106,6 +106,11 @@ function CampagneDetail() {
                   ▶️ Réactiver
                 </button>
               )}
+              {data.campagne.statut === 'terminee' && (
+                <button onClick={() => changerStatut('active')} className="bg-green-100 text-green-700 px-4 py-2 rounded hover:bg-green-200 text-sm">
+                  ▶️ Réactiver
+                </button>
+              )}
               {data.campagne.statut !== 'terminee' && (
                 <button onClick={() => changerStatut('terminee')} className="bg-red-100 text-red-700 px-4 py-2 rounded hover:bg-red-200 text-sm">
                   🛑 Terminer

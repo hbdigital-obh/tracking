@@ -15,6 +15,7 @@ class EditeurCreate(BaseModel):
     nom: str
     email: str
     slug: str
+    statut: str = "actif"  # ← AJOUTÉ
 
 # Données retournées quand on LIT un éditeur
 class EditeurRead(BaseModel):
@@ -59,7 +60,7 @@ class ClicRead(BaseModel):
     ip_anonyme: str
     device: str
     token: str
-    is_suspect: bool = False  # ← AJOUTE CETTE LIGNE
+    is_suspect: bool = False
 
     model_config = {"from_attributes": True}
 

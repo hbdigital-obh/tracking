@@ -10,14 +10,12 @@ from typing import Optional
 # SCHÉMAS : Editeur
 # ============================================================
 
-# Données nécessaires pour CRÉER un éditeur
 class EditeurCreate(BaseModel):
     nom: str
     email: str
     slug: str
-    statut: str = "actif"  # ← AJOUTÉ
+    statut: str = "actif"
 
-# Données retournées quand on LIT un éditeur
 class EditeurRead(BaseModel):
     id: int
     nom: str
@@ -26,7 +24,6 @@ class EditeurRead(BaseModel):
     statut: str
     date_creation: datetime
 
-    # Permet à Pydantic de lire les objets SQLAlchemy directement
     model_config = {"from_attributes": True}
 
 # ============================================================
@@ -37,6 +34,7 @@ class CampagneCreate(BaseModel):
     nom: str
     slug: str
     url_destination: str
+    statut: str = "active"  # ← AJOUTÉ
 
 class CampagneRead(BaseModel):
     id: int
@@ -81,12 +79,10 @@ class LeadRead(BaseModel):
 # SCHÉMAS : Authentification
 # ============================================================
 
-# Données envoyées lors du login
 class LoginSchema(BaseModel):
     email: str
     mot_de_passe: str
 
-# Token JWT retourné après connexion réussie
 class TokenSchema(BaseModel):
     access_token: str
     token_type: str = "bearer"

@@ -66,7 +66,7 @@ async def modifier_editeur(editeur_id: int, editeur: EditeurCreate, db: AsyncSes
     editeur_db.nom = editeur.nom
     editeur_db.email = editeur.email
     editeur_db.slug = editeur.slug
-    editeur_db.statut = editeur.statut  # ← AJOUTÉ
+    editeur_db.statut = editeur.statut
     await db.commit()
     await db.refresh(editeur_db)
     return editeur_db
@@ -109,6 +109,7 @@ async def modifier_campagne(campagne_id: int, campagne: CampagneCreate, db: Asyn
     campagne_db.nom = campagne.nom
     campagne_db.slug = campagne.slug
     campagne_db.url_destination = campagne.url_destination
+    campagne_db.statut = campagne.statut  # ← AJOUTÉ
     await db.commit()
     await db.refresh(campagne_db)
     return campagne_db

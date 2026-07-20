@@ -57,6 +57,30 @@ async def lister_editeurs(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Editeur))
     return result.scalars().all()
 
+@router.put("/editeurs/{editeur_id}", response_model=EditeurRead)
+async def modifier_editeur(editeur_id: int, editeur: EditeurCreate, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Editeur).where(Editeur.id == editeur_id))
+    editeur_db = result.scalar_one_or_none()
+    if not editeur_db:
+        raise HTTPException(status_code=404, detail="Éditeur introuvable")
+    editeur_db.nom = editeur.nom
+    editeur_db.email = editeur.email
+    editeur_db.slug = editeur.slug
+    editeur_db.statut = editeur.statut  # ← AJOUTÉ
+    await db.commit()
+    await db.refresh(editeur_db)
+    return editeur_db
+
+@router.delete("/editeurs/{editeur_id}")
+async def desactiver_editeur(editeur_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Editeur).where(Editeur.id == editeur_id))
+    editeur_db = result.scalar_one_or_none()
+    if not editeur_db:
+        raise HTTPException(status_code=404, detail="Éditeur introuvable")
+    editeur_db.statut = "inactif"
+    await db.commit()
+    return {"message": f"Éditeur {editeur_db.nom} désactivé avec succès"}
+
 # ============================================================
 # GESTION DES CAMPAGNES
 # ============================================================
@@ -75,6 +99,31 @@ async def creer_campagne(campagne: CampagneCreate, db: AsyncSession = Depends(ge
 async def lister_campagnes(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Campagne))
     return result.scalars().all()
+
+@router.put("/campagnes/{campagne_id}", response_model=CampagneRead)
+async def modifier_campagne(campagne_id: int, campagne: CampagneCreate, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Campagne).where(Campagne.id == campagne_id))
+    campagne_db = result.scalar_one_or_none()
+    if not campagne_db:
+        raise HTTPException(status_code=404, detail="Campagne introuvable")
+    campagne_db.nom = campagne.nom
+    campagne_db.slug = campagne.slug
+    campagne_db.url_destination = campagne.url_destination
+    await db.commit()
+    await db.refresh(campagne_db)
+    return campagne_db
+
+@router.put("/campagnes/{campagne_id}/statut")
+async def changer_statut_campagne(campagne_id: int, statut: str, db: AsyncSession = Depends(get_db)):
+    if statut not in ["active", "pause", "terminee"]:
+        raise HTTPException(status_code=400, detail="Statut invalide")
+    result = await db.execute(select(Campagne).where(Campagne.id == campagne_id))
+    campagne_db = result.scalar_one_or_none()
+    if not campagne_db:
+        raise HTTPException(status_code=404, detail="Campagne introuvable")
+    campagne_db.statut = statut
+    await db.commit()
+    return {"message": f"Statut changé en {statut}"}
 
 # ============================================================
 # LISTE DES CLICS
@@ -212,31 +261,27 @@ async def generer_snippet_pixel(campagne_id: int, db: AsyncSession = Depends(get
         "postback_url": postback_url,
         "pixel_url": pixel_url
     }
+
 # ============================================================
 # DÉTAIL D'UN ÉDITEUR
-# URL : GET /admin/editeurs/{editeur_id}/stats
 # ============================================================
 @router.get("/editeurs/{editeur_id}/stats")
 async def stats_editeur_detail(editeur_id: int, db: AsyncSession = Depends(get_db)):
-    
-    # On récupère l'éditeur
     result = await db.execute(select(Editeur).where(Editeur.id == editeur_id))
     editeur = result.scalar_one_or_none()
     if not editeur:
         raise HTTPException(status_code=404, detail="Éditeur introuvable")
 
-    # Stats globales
     total_clics = (await db.execute(select(func.count(Clic.id)).where(Clic.editeur_id == editeur_id))).scalar()
     total_leads = (await db.execute(select(func.count(Lead.id)).join(Clic, Lead.clic_id == Clic.id).where(Clic.editeur_id == editeur_id))).scalar()
     taux_conversion = round((total_leads / total_clics) * 100, 2) if total_clics > 0 else 0.0
 
-    # Evolution sur 30 jours
     date_debut = datetime.utcnow() - timedelta(days=30)
     result_clics = await db.execute(
         select(Clic).where(Clic.editeur_id == editeur_id, Clic.timestamp >= date_debut)
     )
     clics = result_clics.scalars().all()
-    
+
     evolution = {}
     for clic in clics:
         jour = clic.timestamp.strftime("%d/%m")
@@ -262,30 +307,27 @@ async def stats_editeur_detail(editeur_id: int, db: AsyncSession = Depends(get_d
             for jour, count in sorted(evolution.items())
         ]
     }
+
 # ============================================================
 # DÉTAIL D'UNE CAMPAGNE
-# URL : GET /admin/campagnes/{campagne_id}/stats
 # ============================================================
 @router.get("/campagnes/{campagne_id}/stats")
 async def stats_campagne_detail(campagne_id: int, db: AsyncSession = Depends(get_db)):
-    
     result = await db.execute(select(Campagne).where(Campagne.id == campagne_id))
     campagne = result.scalar_one_or_none()
     if not campagne:
         raise HTTPException(status_code=404, detail="Campagne introuvable")
 
-    # Stats globales
     total_clics = (await db.execute(select(func.count(Clic.id)).where(Clic.campagne_id == campagne_id))).scalar()
     total_leads = (await db.execute(select(func.count(Lead.id)).join(Clic, Lead.clic_id == Clic.id).where(Clic.campagne_id == campagne_id))).scalar()
     taux_conversion = round((total_leads / total_clics) * 100, 2) if total_clics > 0 else 0.0
 
-    # Evolution sur 30 jours
     date_debut = datetime.utcnow() - timedelta(days=30)
     result_clics = await db.execute(
         select(Clic).where(Clic.campagne_id == campagne_id, Clic.timestamp >= date_debut)
     )
     clics = result_clics.scalars().all()
-    
+
     evolution = {}
     for clic in clics:
         jour = clic.timestamp.strftime("%d/%m")
@@ -293,10 +335,9 @@ async def stats_campagne_detail(campagne_id: int, db: AsyncSession = Depends(get
             evolution[jour] = 0
         evolution[jour] += 1
 
-    # Stats par éditeur sur cette campagne
     result_editeurs = await db.execute(select(Editeur))
     editeurs = result_editeurs.scalars().all()
-    
+
     stats_editeurs = []
     for editeur in editeurs:
         clics_editeur = (await db.execute(
@@ -328,84 +369,3 @@ async def stats_campagne_detail(campagne_id: int, db: AsyncSession = Depends(get
         ],
         "stats_editeurs": stats_editeurs
     }
-# ============================================================
-# MODIFIER UN ÉDITEUR
-# URL : PUT /admin/editeurs/{editeur_id}
-# ============================================================
-@router.put("/editeurs/{editeur_id}", response_model=EditeurRead)
-async def modifier_editeur(
-    editeur_id: int,
-    editeur: EditeurCreate,
-    db: AsyncSession = Depends(get_db)
-):
-    result = await db.execute(select(Editeur).where(Editeur.id == editeur_id))
-    editeur_db = result.scalar_one_or_none()
-    if not editeur_db:
-        raise HTTPException(status_code=404, detail="Éditeur introuvable")
-    
-    editeur_db.nom = editeur.nom
-    editeur_db.email = editeur.email
-    editeur_db.slug = editeur.slug
-    await db.commit()
-    await db.refresh(editeur_db)
-    return editeur_db
-
-# ============================================================
-# DÉSACTIVER UN ÉDITEUR (sans supprimer l'historique)
-# URL : DELETE /admin/editeurs/{editeur_id}
-# ============================================================
-@router.delete("/editeurs/{editeur_id}")
-async def desactiver_editeur(editeur_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Editeur).where(Editeur.id == editeur_id))
-    editeur_db = result.scalar_one_or_none()
-    if not editeur_db:
-        raise HTTPException(status_code=404, detail="Éditeur introuvable")
-    
-    # On désactive sans supprimer pour garder l'historique
-    editeur_db.statut = "inactif"
-    await db.commit()
-    return {"message": f"Éditeur {editeur_db.nom} désactivé avec succès"}
-
-# ============================================================
-# MODIFIER UNE CAMPAGNE
-# URL : PUT /admin/campagnes/{campagne_id}
-# ============================================================
-@router.put("/campagnes/{campagne_id}", response_model=CampagneRead)
-async def modifier_campagne(
-    campagne_id: int,
-    campagne: CampagneCreate,
-    db: AsyncSession = Depends(get_db)
-):
-    result = await db.execute(select(Campagne).where(Campagne.id == campagne_id))
-    campagne_db = result.scalar_one_or_none()
-    if not campagne_db:
-        raise HTTPException(status_code=404, detail="Campagne introuvable")
-    
-    campagne_db.nom = campagne.nom
-    campagne_db.slug = campagne.slug
-    campagne_db.url_destination = campagne.url_destination
-    await db.commit()
-    await db.refresh(campagne_db)
-    return campagne_db
-
-# ============================================================
-# CHANGER STATUT D'UNE CAMPAGNE
-# URL : PUT /admin/campagnes/{campagne_id}/statut
-# ============================================================
-@router.put("/campagnes/{campagne_id}/statut")
-async def changer_statut_campagne(
-    campagne_id: int,
-    statut: str,
-    db: AsyncSession = Depends(get_db)
-):
-    if statut not in ["active", "pause", "terminee"]:
-        raise HTTPException(status_code=400, detail="Statut invalide")
-    
-    result = await db.execute(select(Campagne).where(Campagne.id == campagne_id))
-    campagne_db = result.scalar_one_or_none()
-    if not campagne_db:
-        raise HTTPException(status_code=404, detail="Campagne introuvable")
-    
-    campagne_db.statut = statut
-    await db.commit()
-    return {"message": f"Statut changé en {statut}"}

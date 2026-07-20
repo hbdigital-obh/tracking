@@ -14,7 +14,7 @@ import CreerEditeur from './pages/CreerEditeur';
 import CreerCampagne from './pages/CreerCampagne';
 import Pixels from './pages/Pixels';
 import EditeurDetail from './pages/EditeurDetail';
-
+import CampagneDetail from './pages/CampagneDetail';
 const isAuthenticated = () => {
   return localStorage.getItem('token') !== null;
 };
@@ -43,6 +43,7 @@ function App() {
                   <Route path="/reporting" element={<Reporting />} />
                   <Route path="/pixels" element={<Pixels />} />
                   <Route path="/editeurs/:id" element={<EditeurDetail />} />
+                  <Route path="/campagnes/:id" element={<CampagneDetail />} />
                 </Routes>
               </div>
             </div>

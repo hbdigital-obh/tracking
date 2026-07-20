@@ -328,3 +328,84 @@ async def stats_campagne_detail(campagne_id: int, db: AsyncSession = Depends(get
         ],
         "stats_editeurs": stats_editeurs
     }
+# ============================================================
+# MODIFIER UN ÉDITEUR
+# URL : PUT /admin/editeurs/{editeur_id}
+# ============================================================
+@router.put("/editeurs/{editeur_id}", response_model=EditeurRead)
+async def modifier_editeur(
+    editeur_id: int,
+    editeur: EditeurCreate,
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(Editeur).where(Editeur.id == editeur_id))
+    editeur_db = result.scalar_one_or_none()
+    if not editeur_db:
+        raise HTTPException(status_code=404, detail="Éditeur introuvable")
+    
+    editeur_db.nom = editeur.nom
+    editeur_db.email = editeur.email
+    editeur_db.slug = editeur.slug
+    await db.commit()
+    await db.refresh(editeur_db)
+    return editeur_db
+
+# ============================================================
+# DÉSACTIVER UN ÉDITEUR (sans supprimer l'historique)
+# URL : DELETE /admin/editeurs/{editeur_id}
+# ============================================================
+@router.delete("/editeurs/{editeur_id}")
+async def desactiver_editeur(editeur_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Editeur).where(Editeur.id == editeur_id))
+    editeur_db = result.scalar_one_or_none()
+    if not editeur_db:
+        raise HTTPException(status_code=404, detail="Éditeur introuvable")
+    
+    # On désactive sans supprimer pour garder l'historique
+    editeur_db.statut = "inactif"
+    await db.commit()
+    return {"message": f"Éditeur {editeur_db.nom} désactivé avec succès"}
+
+# ============================================================
+# MODIFIER UNE CAMPAGNE
+# URL : PUT /admin/campagnes/{campagne_id}
+# ============================================================
+@router.put("/campagnes/{campagne_id}", response_model=CampagneRead)
+async def modifier_campagne(
+    campagne_id: int,
+    campagne: CampagneCreate,
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(Campagne).where(Campagne.id == campagne_id))
+    campagne_db = result.scalar_one_or_none()
+    if not campagne_db:
+        raise HTTPException(status_code=404, detail="Campagne introuvable")
+    
+    campagne_db.nom = campagne.nom
+    campagne_db.slug = campagne.slug
+    campagne_db.url_destination = campagne.url_destination
+    await db.commit()
+    await db.refresh(campagne_db)
+    return campagne_db
+
+# ============================================================
+# CHANGER STATUT D'UNE CAMPAGNE
+# URL : PUT /admin/campagnes/{campagne_id}/statut
+# ============================================================
+@router.put("/campagnes/{campagne_id}/statut")
+async def changer_statut_campagne(
+    campagne_id: int,
+    statut: str,
+    db: AsyncSession = Depends(get_db)
+):
+    if statut not in ["active", "pause", "terminee"]:
+        raise HTTPException(status_code=400, detail="Statut invalide")
+    
+    result = await db.execute(select(Campagne).where(Campagne.id == campagne_id))
+    campagne_db = result.scalar_one_or_none()
+    if not campagne_db:
+        raise HTTPException(status_code=404, detail="Campagne introuvable")
+    
+    campagne_db.statut = statut
+    await db.commit()
+    return {"message": f"Statut changé en {statut}"}

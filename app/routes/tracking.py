@@ -15,17 +15,25 @@ from app.models.models import Editeur, Campagne, Clic, Lead
 
 router = APIRouter()
 
-# Liste des user-agents bots connus
+# Liste complète des user-agents bots connus
 BOTS_USER_AGENTS = [
     "bot", "crawler", "spider", "slurp", "googlebot",
     "bingbot", "yahoo", "baidu", "yandex", "duckduck",
-    "semrush", "ahrefs", "mj12bot", "dotbot"
+    "semrush", "ahrefs", "mj12bot", "dotbot", "applebot",
+    "facebookexternalhit", "twitterbot", "linkedinbot",
+    "whatsapp", "telegrambot", "slackbot", "discordbot",
+    "scrapy", "wget", "curl", "python-requests", "java",
+    "headlesschrome", "phantomjs", "selenium", "puppeteer",
+    "lighthouse", "pingdom", "uptimerobot", "datadog",
+    "nessus", "nikto", "sqlmap", "masscan", "nmap",
+    "archive.org", "ia_archiver", "wayback", "httrack",
+    "screaming frog", "sitebulb", "deepcrawl", "oncrawl"
 ]
 
 def is_bot(user_agent: str) -> bool:
     """Vérifie si le user-agent est un bot connu"""
     if not user_agent:
-        return False
+        return True  # Pas de user-agent = suspect
     ua_lower = user_agent.lower()
     return any(bot in ua_lower for bot in BOTS_USER_AGENTS)
 
@@ -57,11 +65,9 @@ async def tracker_clic(
     request: Request,
     db: AsyncSession = Depends(get_db)
 ):
-    # Récupère l'IP et le user-agent
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "")
 
-    # On cherche l'éditeur
     result = await db.execute(
         select(Editeur).where(Editeur.slug == slug_editeur)
     )
@@ -69,7 +75,6 @@ async def tracker_clic(
     if not editeur:
         raise HTTPException(status_code=404, detail="Éditeur introuvable")
 
-    # On cherche la campagne
     result = await db.execute(
         select(Campagne).where(Campagne.slug == slug_campagne)
     )
@@ -98,10 +103,8 @@ async def tracker_clic(
         if result_doublon.scalars().first():
             suspect = True
 
-    # On génère un token unique
     token = str(uuid.uuid4())
 
-    # On crée le clic
     clic = Clic(
         editeur_id=editeur.id,
         campagne_id=campagne.id,

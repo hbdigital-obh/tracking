@@ -95,7 +95,7 @@ async def tracker_clic(
                 Clic.timestamp >= trente_secondes
             )
         )
-        if result_doublon.scalar_one_or_none():
+        if result_doublon.scalars().first():
             suspect = True
 
     # On génère un token unique
